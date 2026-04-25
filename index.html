@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MyTraining — Inscription</title>
+  <link rel="stylesheet" href="css/style.css">
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+</head>
+<body>
+
+  <!-- NAV -->
+  <nav class="navbar">
+    <div class="nav-inner">
+      <a href="index.html" class="logo">
+        <span class="logo-icon">▲</span>
+        <span>MyTraining</span>
+      </a>
+      <div class="nav-links">
+        <a href="index.html" class="nav-link active">Inscription</a>
+        <a href="liste.php" class="nav-link">Participants</a>
+        <a href="stats.php" class="nav-link">Statistiques</a>
+        <a href="login.php" class="nav-link btn-nav">Connexion</a>
+      </div>
+    </div>
+  </nav>
+
+  <!-- HERO -->
+  <section class="hero">
+    <div class="hero-badge">Plateforme de Formation</div>
+    <h1 class="hero-title">Développez vos<br><em>compétences</em></h1>
+    <p class="hero-sub">Choisissez vos modules, formez-vous à votre rythme.</p>
+    <div class="hero-orb orb1"></div>
+    <div class="hero-orb orb2"></div>
+  </section>
+
+  <!-- FORM SECTION -->
+  <main class="form-section">
+    <div class="form-container">
+      <div class="form-header">
+        <h2>Formulaire d'inscription</h2>
+        <p>Remplissez les champs ci-dessous pour rejoindre une formation.</p>
+      </div>
+
+      <div id="alert-box" class="alert hidden"></div>
+
+      <form id="registrationForm" action="php/traitement.php" method="POST" novalidate>
+
+        <!-- Nom & Prénom -->
+        <div class="form-row">
+          <div class="form-group">
+            <label for="nom">Nom <span class="req">*</span></label>
+            <input type="text" id="nom" name="nom" placeholder="Ex: Benali" autocomplete="family-name">
+            <span class="field-error" id="err-nom"></span>
+          </div>
+          <div class="form-group">
+            <label for="prenom">Prénom <span class="req">*</span></label>
+            <input type="text" id="prenom" name="prenom" placeholder="Ex: Yassine" autocomplete="given-name">
+            <span class="field-error" id="err-prenom"></span>
+          </div>
+        </div>
+
+        <!-- CIN & Email -->
+        <div class="form-row">
+          <div class="form-group">
+            <label for="cin">CIN <span class="req">*</span></label>
+            <input type="text" id="cin" name="cin" placeholder="8 chiffres" maxlength="8">
+            <span class="field-error" id="err-cin"></span>
+          </div>
+          <div class="form-group">
+            <label for="email">Email <span class="req">*</span></label>
+            <input type="email" id="email" name="email" placeholder="vous@exemple.com" autocomplete="email">
+            <span class="field-error" id="err-email"></span>
+          </div>
+        </div>
+
+        <!-- Niveau -->
+        <div class="form-group">
+          <label>Niveau <span class="req">*</span></label>
+          <div class="radio-group">
+            <label class="radio-card">
+              <input type="radio" name="niveau" value="débutant">
+              <span class="radio-label">
+                <span class="radio-icon">🌱</span>
+                Débutant
+              </span>
+            </label>
+            <label class="radio-card">
+              <input type="radio" name="niveau" value="intermédiaire">
+              <span class="radio-label">
+                <span class="radio-icon">⚡</span>
+                Intermédiaire
+              </span>
+            </label>
+            <label class="radio-card">
+              <input type="radio" name="niveau" value="avancé">
+              <span class="radio-label">
+                <span class="radio-icon">🚀</span>
+                Avancé
+              </span>
+            </label>
+          </div>
+          <span class="field-error" id="err-niveau"></span>
+        </div>
+
+        <!-- Modules -->
+        <div class="form-group">
+          <label>Modules <span class="req">*</span> <small class="hint">— 2 maximum</small></label>
+          <div class="modules-grid">
+            <label class="module-card">
+              <input type="checkbox" name="modules[]" value="1">
+              <div class="module-body">
+                <span class="module-tag">Dev Web</span>
+                <strong>HTML / CSS</strong>
+                <p>Structurez et stylisez vos pages web modernes.</p>
+              </div>
+              <span class="check-mark">✓</span>
+            </label>
+            <label class="module-card">
+              <input type="checkbox" name="modules[]" value="2">
+              <div class="module-body">
+                <span class="module-tag">Dev Web</span>
+                <strong>JavaScript</strong>
+                <p>Interactivité, DOM et logique applicative.</p>
+              </div>
+              <span class="check-mark">✓</span>
+            </label>
+            <label class="module-card">
+              <input type="checkbox" name="modules[]" value="3">
+              <div class="module-body">
+                <span class="module-tag">Backend</span>
+                <strong>PHP & MySQL</strong>
+                <p>Développez des applications serveur robustes.</p>
+              </div>
+              <span class="check-mark">✓</span>
+            </label>
+            <label class="module-card">
+              <input type="checkbox" name="modules[]" value="4">
+              <div class="module-body">
+                <span class="module-tag">Data</span>
+                <strong>Python Data</strong>
+                <p>Analyse de données avec Pandas et NumPy.</p>
+              </div>
+              <span class="check-mark">✓</span>
+            </label>
+            <label class="module-card">
+              <input type="checkbox" name="modules[]" value="5">
+              <div class="module-body">
+                <span class="module-tag">IA</span>
+                <strong>Machine Learning</strong>
+                <p>Modèles prédictifs et algorithmes d'apprentissage.</p>
+              </div>
+              <span class="check-mark">✓</span>
+            </label>
+            <label class="module-card">
+              <input type="checkbox" name="modules[]" value="6">
+              <div class="module-body">
+                <span class="module-tag">Réseau</span>
+                <strong>Cybersécurité</strong>
+                <p>Sécurité des systèmes et réseaux informatiques.</p>
+              </div>
+              <span class="check-mark">✓</span>
+            </label>
+          </div>
+          <span class="field-error" id="err-modules"></span>
+        </div>
+
+        <!-- Submit -->
+        <div class="form-footer">
+          <p class="privacy-note">Vos données sont utilisées uniquement dans le cadre de cette formation.</p>
+          <button type="submit" class="btn-submit" onclick="return Verif()">
+            <span>Valider l'inscription</span>
+            <span class="btn-arrow">→</span>
+          </button>
+        </div>
+
+      </form>
+    </div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+      <span class="logo"><span class="logo-icon">▲</span> MyTraining</span>
+      <span>Plateforme de formation en ligne &copy; 2025</span>
+    </div>
+  </footer>
+
+  <script src="js/validation.js"></script>
+</body>
+</html>
