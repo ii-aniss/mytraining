@@ -1,201 +1,115 @@
 <?php
-// ============================================
-//  MyTraining — liste.php
-//  Liste des participants et leurs modules
-// ============================================
-
-require_once __DIR__ . '/php/config.php';
+require_once __DIR__ . '/includes/db.php';
 session_start();
+$pageTitle = "Liste des inscrits";
 
-$pdo = getDB();
-
-// ---------- Suppression (BONUS) ----------
-if (isset($_GET['delete']) && is_numeric($_GET['delete'])) {
-    $stmt = $pdo->prepare("DELETE FROM users WHERE id = ?");
-    $stmt->execute([(int)$_GET['delete']]);
-    $_SESSION['flash_msg']  = "Inscription supprimée.";
-    $_SESSION['flash_type'] = 'success';
-    header('Location: liste.php');
-    exit;
-}
-
-// ---------- Recherche ----------
-$search = htmlspecialchars(trim($_GET['q'] ?? ''), ENT_QUOTES, 'UTF-8');
-
-// ---------- Récupérer les utilisateurs + modules ----------
+// Récupérer tous les utilisateurs avec leurs modules (jointure SQL)
 $sql = "
     SELECT
-        u.id,
-        u.nom,
-        u.prenom,
-        u.cin,
-        u.email,
-        u.niveau,
-        u.created_at,
-        GROUP_CONCAT(m.nom_module ORDER BY m.id SEPARATOR '||') AS modules_list
+        u.id, u.nom, u.prenom, u.cin, u.email, u.niveau, u.cree_le,
+        GROUP_CONCAT(m.nom_module ORDER BY m.nom_module SEPARATOR '||') AS modules
     FROM users u
-    LEFT JOIN inscriptions i ON i.user_id = u.id
-    LEFT JOIN modules m ON m.id = i.module_id
+    LEFT JOIN inscriptions i ON i.user_id   = u.id
+    LEFT JOIN modules      m ON m.id        = i.module_id
+    GROUP BY u.id
+    ORDER BY u.cree_le DESC
 ";
-$params = [];
-if ($search) {
-    $sql .= " WHERE u.nom LIKE ? OR u.prenom LIKE ? OR u.email LIKE ? OR u.cin LIKE ?";
-    $like = "%$search%";
-    $params = [$like, $like, $like, $like];
-}
-$sql .= " GROUP BY u.id ORDER BY u.created_at DESC";
+$users = $pdo->query($sql)->fetchAll();
 
-$stmt = $pdo->prepare($sql);
-$stmt->execute($params);
-$users = $stmt->fetchAll();
+include __DIR__ . '/includes/header.php';
 
-$totalUsers = count($users);
-
-// Flash message
-$flash     = $_SESSION['flash_msg']  ?? '';
-$flashType = $_SESSION['flash_type'] ?? 'success';
-unset($_SESSION['flash_msg'], $_SESSION['flash_type']);
+$isAdmin = isset($_SESSION['admin']);
 ?>
-<!DOCTYPE html>
-<html lang="fr">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>MyTraining — Participants</title>
-  <link rel="stylesheet" href="css/style.css">
-  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
-</head>
-<body>
 
-<nav class="navbar">
-  <div class="nav-inner">
-    <a href="index.html" class="logo"><span class="logo-icon">▲</span><span>MyTraining</span></a>
-    <div class="nav-links">
-      <a href="index.html" class="nav-link">Inscription</a>
-      <a href="liste.php" class="nav-link active">Participants</a>
-      <a href="stats.php" class="nav-link">Statistiques</a>
-      <a href="login.php" class="nav-link btn-nav">Connexion</a>
-    </div>
-  </div>
-</nav>
+<section class="hero" style="text-align:left;margin-bottom:24px">
+    <h1 style="font-size:28px">Liste des inscrits</h1>
+    <p>Toutes les personnes inscrites sur MyTraining et les modules qu'elles suivent.</p>
+</section>
 
-<div class="page-header">
-  <h1>Participants inscrits</h1>
-  <p>Liste complète des utilisateurs et leurs modules de formation.</p>
-</div>
+<?php if (!empty($_GET['msg']) && $_GET['msg'] === 'updated'): ?>
+    <div class="alert alert-success"><strong>Modification enregistrée.</strong></div>
+<?php endif; ?>
+<?php if (!empty($_GET['msg']) && $_GET['msg'] === 'deleted'): ?>
+    <div class="alert alert-success"><strong>Inscription supprimée.</strong></div>
+<?php endif; ?>
 
-<div class="page-content">
-
-  <?php if ($flash): ?>
-  <div class="alert <?= htmlspecialchars($flashType) ?>" style="margin-bottom:1.5rem">
-    <?= htmlspecialchars($flash) ?>
-  </div>
-  <?php endif; ?>
-
-  <div class="table-card">
+<div class="table-wrapper">
     <div class="table-toolbar">
-      <form method="GET" action="liste.php" style="display:flex;gap:10px;flex:1;max-width:400px">
-        <div class="search-box" style="flex:1">
-          <span class="search-icon">🔍</span>
-          <input type="search" name="q" placeholder="Rechercher nom, email, CIN…"
-                 value="<?= htmlspecialchars($search) ?>"
-                 onchange="this.form.submit()">
+        <div class="count">
+            <strong id="rowCount"><?= count($users) ?></strong> inscrit<?= count($users) > 1 ? 's' : '' ?>
         </div>
-        <?php if ($search): ?>
-          <a href="liste.php" style="padding:8px 14px;border:1px solid var(--border);border-radius:var(--radius);color:var(--text2);text-decoration:none;font-size:0.85rem;display:flex;align-items:center">✕</a>
-        <?php endif; ?>
-      </form>
-      <span class="badge-count"><?= $totalUsers ?> participant<?= $totalUsers !== 1 ? 's' : '' ?></span>
+        <input type="text" id="searchInput" class="search-input" placeholder="🔍 Rechercher (nom, email, CIN, module...)">
     </div>
 
     <?php if (empty($users)): ?>
-      <div class="empty-state">
-        <div class="empty-icon">📋</div>
-        <p><?= $search ? "Aucun résultat pour « $search »." : "Aucun participant inscrit pour l'instant." ?></p>
-      </div>
+        <div class="empty-state">
+            <div class="empty-state-icon">📋</div>
+            <h3>Aucun inscrit pour le moment</h3>
+            <p>Les inscriptions apparaîtront ici dès qu'un utilisateur s'inscrit.</p>
+            <p style="margin-top:16px"><a href="index.php" class="btn btn-primary">Créer une inscription</a></p>
+        </div>
     <?php else: ?>
-    <table>
-      <thead>
-        <tr>
-          <th>#</th>
-          <th>Participant</th>
-          <th>CIN</th>
-          <th>Niveau</th>
-          <th>Modules</th>
-          <th>Date</th>
-          <th>Action</th>
-        </tr>
-      </thead>
-      <tbody>
-        <?php foreach ($users as $i => $user):
-            $initials = strtoupper(mb_substr($user['nom'], 0, 1) . mb_substr($user['prenom'], 0, 1));
-            $mods = $user['modules_list'] ? explode('||', $user['modules_list']) : [];
-            $niveauClass = 'niveau-' . strtolower($user['niveau']);
-            $date = date('d/m/Y', strtotime($user['created_at']));
-        ?>
-        <tr>
-          <td style="color:var(--text3);font-size:0.8rem"><?= $i + 1 ?></td>
-          <td>
-            <div class="user-cell">
-              <div class="avatar"><?= htmlspecialchars($initials) ?></div>
-              <div class="user-info">
-                <span class="user-name"><?= htmlspecialchars($user['prenom'] . ' ' . $user['nom']) ?></span>
-                <span class="user-email"><?= htmlspecialchars($user['email']) ?></span>
-              </div>
-            </div>
-          </td>
-          <td style="font-family:monospace;letter-spacing:0.05em"><?= htmlspecialchars($user['cin']) ?></td>
-          <td><span class="niveau-badge <?= $niveauClass ?>"><?= htmlspecialchars($user['niveau']) ?></span></td>
-          <td>
-            <?php if (empty($mods)): ?>
-              <span style="color:var(--text3);font-size:0.82rem">Aucun</span>
-            <?php else: ?>
-              <?php foreach ($mods as $m): ?>
-                <span class="module-pill"><?= htmlspecialchars($m) ?></span>
-              <?php endforeach; ?>
-            <?php endif; ?>
-          </td>
-          <td style="color:var(--text3);font-size:0.85rem"><?= $date ?></td>
-          <td>
-            <button class="btn-delete"
-              onclick="confirmDelete(<?= (int)$user['id'] ?>, '<?= htmlspecialchars($user['prenom'].' '.$user['nom'], ENT_QUOTES) ?>')">
-              Supprimer
-            </button>
-          </td>
-        </tr>
-        <?php endforeach; ?>
-      </tbody>
-    </table>
-    <?php endif; ?>
-  </div>
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Étudiant</th>
+                    <th>CIN</th>
+                    <th>Niveau</th>
+                    <th>Modules</th>
+                    <th>Inscrit le</th>
+                    <?php if ($isAdmin): ?><th style="text-align:right">Actions</th><?php endif; ?>
+                </tr>
+            </thead>
+            <tbody>
+                <?php foreach ($users as $u):
+                    $initials = strtoupper(mb_substr($u['prenom'], 0, 1) . mb_substr($u['nom'], 0, 1));
+                    $modulesArr = $u['modules'] ? explode('||', $u['modules']) : [];
+                ?>
+                    <tr>
+                        <td>
+                            <div class="user-cell">
+                                <div class="avatar"><?= htmlspecialchars($initials) ?></div>
+                                <div class="user-meta">
+                                    <strong><?= htmlspecialchars($u['prenom'] . ' ' . $u['nom']) ?></strong>
+                                    <span><?= htmlspecialchars($u['email']) ?></span>
+                                </div>
+                            </div>
+                        </td>
+                        <td><?= htmlspecialchars($u['cin']) ?></td>
+                        <td><span class="badge badge-niveau"><?= htmlspecialchars($u['niveau']) ?></span></td>
+                        <td>
+                            <?php if ($modulesArr): ?>
+                                <?php foreach ($modulesArr as $mod): ?>
+                                    <span class="badge"><?= htmlspecialchars($mod) ?></span>
+                                <?php endforeach; ?>
+                            <?php else: ?>
+                                <span class="badge badge-empty">Aucun</span>
+                            <?php endif; ?>
+                        </td>
+                        <td style="color:var(--color-muted);font-size:13.5px">
+                            <?= date('d/m/Y', strtotime($u['cree_le'])) ?>
+                        </td>
+                        <?php if ($isAdmin): ?>
+                            <td style="text-align:right;white-space:nowrap">
+                                <a href="modifier.php?id=<?= (int)$u['id'] ?>" class="btn btn-sm btn-secondary">Modifier</a>
+                                <a href="supprimer.php?id=<?= (int)$u['id'] ?>"
+                                   class="btn btn-sm btn-danger"
+                                   data-confirm="Voulez-vous vraiment supprimer <?= htmlspecialchars($u['prenom'] . ' ' . $u['nom']) ?> ?">
+                                   Supprimer
+                                </a>
+                            </td>
+                        <?php endif; ?>
+                    </tr>
+                <?php endforeach; ?>
+            </tbody>
+        </table>
 
+        <?php if (!$isAdmin): ?>
+            <div style="padding:14px 22px;background:var(--color-bg);font-size:13.5px;color:var(--color-muted);border-top:1px solid var(--color-border)">
+                Connectez-vous en tant qu'<a href="login.php"><strong>administrateur</strong></a> pour modifier ou supprimer des inscriptions.
+            </div>
+        <?php endif; ?>
+    <?php endif; ?>
 </div>
 
-<footer class="footer">
-  <div class="footer-inner">
-    <span class="logo"><span class="logo-icon">▲</span> MyTraining</span>
-    <span>Plateforme de formation en ligne &copy; 2025</span>
-  </div>
-</footer>
-
-<script>
-function confirmDelete(id, name) {
-  if (confirm('Supprimer l\'inscription de ' + name + ' ?\nCette action est irréversible.')) {
-    window.location.href = 'liste.php?delete=' + id;
-  }
-}
-
-// Recherche en temps réel
-const searchInput = document.querySelector('input[name="q"]');
-if (searchInput) {
-  let timeout;
-  searchInput.removeAttribute('onchange');
-  searchInput.addEventListener('input', function() {
-    clearTimeout(timeout);
-    timeout = setTimeout(() => this.form.submit(), 400);
-  });
-}
-</script>
-
-</body>
-</html>
+<?php include __DIR__ . '/includes/footer.php'; ?>
